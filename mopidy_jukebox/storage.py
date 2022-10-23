@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 def check_dirs_and_files(config):
-    if not pathlib.Path(config["local"]["media_dir"]).is_dir():
+    if not pathlib.Path(config["jukebox"]["media_dir"]).is_dir():
         logger.warning(
             "Local media dir %s does not exist or we lack permissions to the "
-            "directory or one of its parents" % config["local"]["media_dir"]
+            "directory or one of its parents" % config["jukebox"]["media_dir"]
         )
 
 
@@ -36,7 +36,7 @@ def model_uri(type, model):
         digest = hashlib.md5(str(model.replace(num_tracks=None)).encode())
     else:
         digest = hashlib.md5(str(model).encode())
-    return "local:{}:md5:{}".format(type, digest.hexdigest())
+    return "jukebox:{}:md5:{}".format(type, digest.hexdigest())
 
 
 def get_image_size_jpeg(data):

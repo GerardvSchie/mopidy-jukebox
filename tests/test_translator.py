@@ -2,7 +2,7 @@ import os
 import pathlib
 
 import pytest
-from mopidy_local import translator
+from mopidy_jukebox import translator
 
 
 @pytest.mark.parametrize(

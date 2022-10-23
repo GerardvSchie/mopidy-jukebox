@@ -5,7 +5,7 @@ import shutil
 import pytest
 
 from mopidy import exceptions
-from mopidy_local import mtimes
+from mopidy_jukebox import mtimes
 
 import tests
 

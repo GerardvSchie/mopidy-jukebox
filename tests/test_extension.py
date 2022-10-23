@@ -1,4 +1,4 @@
-from mopidy_local import Extension
+from mopidy_jukebox import Extension
 
 
 def test_get_default_config():

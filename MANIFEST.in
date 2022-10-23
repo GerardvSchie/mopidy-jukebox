@@ -12,5 +12,5 @@ include mopidy_*/ext.conf
 
 recursive-include tests *.py
 recursive-include tests/data *
-recursive-include mopidy_local/www *.html
-recursive-include mopidy_local/sql *.sql
+recursive-include mopidy_jukebox/www *.html
+recursive-include mopidy_jukebox/sql *.sql

@@ -1,6 +1,6 @@
 import pytest
 
-from mopidy_local import storage
+from mopidy_jukebox import storage
 
 
 @pytest.mark.parametrize(

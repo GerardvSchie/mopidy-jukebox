@@ -3,6 +3,8 @@ import operator
 import sqlite3
 
 import uritools
+from . import Extension, schema, translator
+from mopidy_jukebox import storage
 from mopidy import backend, models
 from mopidy.models import Ref, SearchResult
 
@@ -13,32 +15,29 @@ logger = logging.getLogger(__name__)
 
 def date_ref(date):
     return Ref.directory(
-        uri=uritools.uricompose("local", None, "directory", {"date": date}), name=date
+        uri=uritools.uricompose("jukebox", None, "directory", {"date": date}), name=date
     )
 
 
 def genre_ref(genre):
     return Ref.directory(
-        uri=uritools.uricompose("local", None, "directory", {"genre": genre}),
+        uri=uritools.uricompose("jukebox", None, "directory", {"genre": genre}),
         name=genre,
     )
 
 
 class LocalLibraryProvider(backend.LibraryProvider):
 
-    ROOT_DIRECTORY_URI = "local:directory"
+    ROOT_DIRECTORY_URI = "jukebox:directory"
 
-    root_directory = models.Ref.directory(uri=ROOT_DIRECTORY_URI, name="Local media")
+    root_directory = models.Ref.directory(uri=ROOT_DIRECTORY_URI, name="Jukebox")
 
     def __init__(self, backend, config):
         super().__init__(backend)
+        self._global_config = config
         self._config = ext_config = config[Extension.ext_name]
         self._data_dir = Extension.get_data_dir(config)
-        self._directories = []
-        for line in ext_config["directories"]:
-            name, uri = line.rsplit(None, 1)
-            ref = Ref.directory(uri=uri, name=name)
-            self._directories.append(ref)
+        self._tracks = []
         self._dbpath = self._data_dir / "library.db"
         self._connection = None
 
@@ -49,34 +48,23 @@ class LocalLibraryProvider(backend.LibraryProvider):
             return schema.count_tracks(connection)
 
     def lookup(self, uri):
-        try:
-            if uri.startswith("local:album"):
-                return list(schema.lookup(self._connect(), Ref.ALBUM, uri))
-            elif uri.startswith("local:artist"):
-                return list(schema.lookup(self._connect(), Ref.ARTIST, uri))
-            elif uri.startswith("local:track"):
-                return list(schema.lookup(self._connect(), Ref.TRACK, uri))
-            else:
-                raise ValueError("Invalid lookup URI")
-        except Exception as e:
-            logger.error("Lookup error for %s: %s", uri, e)
-            return []
+        library = storage.LocalStorageProvider(self._global_config)
+        logging.debug('JUKEBOX LOOKUP')
+        for track in library.begin():
+            if track.uri == uri:
+                return [track]
+
+        return []
 
     def browse(self, uri):
-        try:
-            if uri == self.ROOT_DIRECTORY_URI:
-                return self._directories
-            elif uri.startswith("local:directory"):
-                return self._browse_directory(uri)
-            elif uri.startswith("local:artist"):
-                return self._browse_artist(uri)
-            elif uri.startswith("local:album"):
-                return self._browse_album(uri)
-            else:
-                raise ValueError("Invalid browse URI")
-        except Exception as e:
-            logger.error("Error browsing %s: %s", uri, e)
-            return []
+        library = storage.LocalStorageProvider(self._global_config)
+        tracks = []
+        logging.debug('JUKEBOX BROWSE')
+        for track in library.begin():
+            ref = Ref.track(uri=track.uri, name=track.name)
+            tracks.append(ref)
+
+        return tracks
 
     def search(self, query=None, limit=100, offset=0, uris=None, exact=False):
         limit = self._config["max_search_results"]
@@ -86,16 +74,16 @@ class LocalLibraryProvider(backend.LibraryProvider):
         filters = [f for uri in uris or [] for f in self._filters(uri) if f]
         with self._connect() as c:
             tracks = schema.search_tracks(c, q, limit, offset, exact, filters)
-        uri = uritools.uricompose("local", path="search", query=q)
+        uri = uritools.uricompose("jukebox", path="search", query=q)
         return SearchResult(uri=uri, tracks=tracks)
 
     def get_images(self, uris):
         images = {}
         with self._connect() as c:
             for uri in uris:
-                if uri.startswith("local:album"):
+                if uri.startswith("jukebox:album"):
                     images[uri] = schema.get_album_images(c, uri)
-                elif uri.startswith("local:track"):
+                elif uri.startswith("jukebox:track"):
                     images[uri] = schema.get_track_images(c, uri)
         return images
 
@@ -130,7 +118,7 @@ class LocalLibraryProvider(backend.LibraryProvider):
                 albums.append(
                     Ref.directory(
                         uri=uritools.uricompose(
-                            "local",
+                            "jukebox",
                             None,
                             "directory",
                             dict(type=Ref.TRACK, album=ref.uri, artist=uri),
@@ -175,7 +163,7 @@ class LocalLibraryProvider(backend.LibraryProvider):
                 refs.append(
                     Ref.directory(
                         uri=uritools.uricompose(
-                            "local",
+                            "jukebox",
                             None,
                             "directory",
                             dict(query, type=Ref.TRACK, album=ref.uri),  # noqa
@@ -187,7 +175,7 @@ class LocalLibraryProvider(backend.LibraryProvider):
                 refs.append(
                     Ref.directory(
                         uri=uritools.uricompose(
-                            "local", None, "directory", dict(query, **{role: ref.uri})
+                            "jukebox", None, "directory", dict(query, **{role: ref.uri})
                         ),
                         name=ref.name,
                     )
@@ -197,11 +185,11 @@ class LocalLibraryProvider(backend.LibraryProvider):
         return refs
 
     def _filters(self, uri):
-        if uri.startswith("local:directory"):
+        if uri.startswith("jukebox:directory"):
             return [dict(uritools.urisplit(uri).getquerylist())]
-        elif uri.startswith("local:artist"):
+        elif uri.startswith("jukebox:artist"):
             return [{"artist": uri}, {"albumartist": uri}]
-        elif uri.startswith("local:album"):
+        elif uri.startswith("jukebox:album"):
             return [{"album": uri}]
         else:
             return []

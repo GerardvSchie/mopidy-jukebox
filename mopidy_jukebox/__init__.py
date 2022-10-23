@@ -4,13 +4,13 @@ import pkg_resources
 
 from mopidy import config, ext
 
-__version__ = pkg_resources.get_distribution("Mopidy-Local").version
+__version__ = pkg_resources.get_distribution("Mopidy-Jukebox").version
 
 
 class Extension(ext.Extension):
 
-    dist_name = "Mopidy-Local"
-    ext_name = "local"
+    dist_name = "Mopidy-Jukebox"
+    ext_name = "jukebox"
     version = __version__
 
     def get_default_config(self):
@@ -29,7 +29,6 @@ class Extension(ext.Extension):
         schema["scan_follow_symlinks"] = config.Boolean()
         schema["included_file_extensions"] = config.List(optional=True)
         schema["excluded_file_extensions"] = config.List(optional=True)
-        schema["directories"] = config.List()
         schema["timeout"] = config.Integer(optional=True, minimum=1)
         schema["use_artist_sortname"] = config.Boolean()
         schema["album_art_files"] = config.List(optional=True)

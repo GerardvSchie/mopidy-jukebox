@@ -5,7 +5,7 @@ import time
 from mopidy import commands
 from mopidy.audio import scan, tags
 
-from mopidy_local import mtimes, storage, translator
+from mopidy_jukebox import mtimes, storage, translator
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +61,14 @@ class ScanCommand(commands.Command):
         )
 
     def run(self, args, config):
-        media_dir = pathlib.Path(config["local"]["media_dir"]).resolve()
+        path = pathlib.Path(config["jukebox"]["media_dir"])
+        print(path)
+        media_dir = path.resolve()
         library = storage.LocalStorageProvider(config)
 
         file_mtimes = self._find_files(
             media_dir=media_dir,
-            follow_symlinks=config["local"]["scan_follow_symlinks"],
+            follow_symlinks=config["jukebox"]["scan_follow_symlinks"],
         )
 
         files_to_update, files_in_library = self._check_tracks_in_library(
@@ -83,11 +85,11 @@ class ScanCommand(commands.Command):
                 files_in_library=files_in_library,
                 included_file_exts=[
                     file_ext.lower()
-                    for file_ext in config["local"]["included_file_extensions"]
+                    for file_ext in config["jukebox"]["included_file_extensions"]
                 ],
                 excluded_file_exts=[
                     file_ext.lower()
-                    for file_ext in config["local"]["excluded_file_extensions"]
+                    for file_ext in config["jukebox"]["excluded_file_extensions"]
                 ],
             )
         )
@@ -97,8 +99,8 @@ class ScanCommand(commands.Command):
             file_mtimes=file_mtimes,
             files=files_to_update,
             library=library,
-            timeout=config["local"]["scan_timeout"],
-            flush_threshold=config["local"]["scan_flush_threshold"],
+            timeout=config["jukebox"]["scan_timeout"],
+            flush_threshold=config["jukebox"]["scan_flush_threshold"],
             limit=args.limit,
         )
 

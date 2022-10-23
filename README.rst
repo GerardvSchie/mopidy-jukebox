@@ -1,6 +1,6 @@
-************
-Mopidy-Local
-************
+**************
+Mopidy-Jukebox
+**************
 
 .. image:: https://img.shields.io/pypi/v/Mopidy-Local
     :target: https://pypi.org/project/Mopidy-Local/

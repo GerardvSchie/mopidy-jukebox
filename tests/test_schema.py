@@ -3,7 +3,7 @@ import unittest
 
 from mopidy.models import Album, Artist, Ref, Track
 
-from mopidy_local import schema
+from mopidy_jukebox import schema
 
 DBPATH = ":memory:"
 
